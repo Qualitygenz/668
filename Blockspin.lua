@@ -304,14 +304,14 @@ local PlayerGui = Client:WaitForChild("PlayerGui")
 local BankBalance =
     GeneralTab:Button(
     {
-        Title = "🏦 Bank Balance",
+        Title = "เงินในธนาคาร",
         Desc = "N/A"
     }
 )
 local HandBalance =
     GeneralTab:Button(
     {
-        Title = "💸 Hand Balance",
+        Title = "เงินในมือ",
         Desc = "N/A"
     }
 )
@@ -363,8 +363,7 @@ Player.CharacterAdded:Connect(function(char)
 end)
 
 GeneralTab:Toggle({
-    Title = "Speed Boost",
-    Desc = "",
+    Title = "วิ่งไว",
     Value = false,
     Callback = function(v)
         Enabled = v
@@ -372,8 +371,7 @@ GeneralTab:Toggle({
 })
 
 GeneralTab:Slider({
-    Title = "Speed Multiplier",
-    Desc = "",
+    Title = "ความไว",
     Step = 1,
     Value = {
         Min = 0,
@@ -397,7 +395,7 @@ local HighJump = false
 local JumpPower = 1
 
 GeneralTab:Toggle({
-    Title = "High Jump",
+    Title = "กระโดดสูง",
     Default = false,
     Callback = function(v)
         HighJump = v
@@ -405,7 +403,7 @@ GeneralTab:Toggle({
 })
 
 GeneralTab:Slider({
-    Title = "Jump Value",
+    Title = "ความสูง",
     Step = 1,
     Value = {
         Min = 1,
@@ -433,7 +431,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 GeneralTab:Toggle({
-    Title = "infinity stamina",
+    Title = "สเตมิน่าไม่จำกัด",
     Default = false,
     Callback = function(state)
         if state then
@@ -500,8 +498,7 @@ local Char = require(game.ReplicatedStorage.Modules.Core.Char)
 getgenv().AntiAimAssiant = false
 
 GeneralTab:Toggle({
-    Title = "Anti aim",
-    Desc = "",
+    Title = "กันล็อค",
     Value = false,
     Callback = function(v)
         getgenv().AntiAimAssiant = v
@@ -596,8 +593,7 @@ local function flickerAndMove()
 end
 
 GeneralTab:Toggle({
-    Title = "Anti kill",
-    Desc = "",
+    Title = "กันตาย",
     Value = false,
     Callback = function(v)
         enabled = v
@@ -629,31 +625,61 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-local DroppedFolder = workspace:FindFirstChild("DroppedItems")
-local pick
-GeneralTab:Toggle({
-    Title = "Pickup item",
-    Default = false,
-    Callback = function(state)
-        if state then
-            pick = task.spawn(function()
-                while task.wait() do
-                    for _, v in pairs(DroppedFolder:GetChildren()) do
-                        if v:IsA("Model") and v:FindFirstChild("PickUpZone") then
-                            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            if root and (v:GetPivot().Position - root.Position).Magnitude < 50 then
-                                Net.get("pickup_dropped_item", v)
-                            end
-                        end
-                    end
-                end
-            end)
-        else
-            if pick then
-                task.cancel(pick)
-                pick = nil
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local DroppedItems = workspace:WaitForChild("DroppedItems")
+
+local Character
+local HRP
+
+local PICKUP_DISTANCE = 350
+local TOUCH_REPEAT = 25
+local pickupEnabled = false
+
+
+local function bindCharacter(char)
+    Character = char
+    HRP = char:WaitForChild("HumanoidRootPart", 5)
+end
+
+if LocalPlayer.Character then
+    bindCharacter(LocalPlayer.Character)
+end
+LocalPlayer.CharacterAdded:Connect(bindCharacter)
+
+
+local function firetouch(partA, partB)
+    if not firetouchinterest or not partA or not partB then return end
+    for i = 1, TOUCH_REPEAT do
+        firetouchinterest(partA, partB, 0)
+        firetouchinterest(partA, partB, 1)
+    end
+end
+
+
+RunService.RenderStepped:Connect(function()
+    if not pickupEnabled then return end
+    if not HRP or not HRP.Parent then return end
+
+    for _, item in ipairs(DroppedItems:GetChildren()) do
+        local zone = item:FindFirstChild("PickUpZone")
+        if zone and zone:IsA("BasePart") then
+            local dist = (HRP.Position - zone.Position).Magnitude
+            if dist <= PICKUP_DISTANCE then
+                firetouch(zone, HRP)
             end
         end
+    end
+end)
+
+
+GeneralTab:Toggle({
+    Title = "ดูดของ",
+    Default = false,
+    Callback = function(state)
+        pickupEnabled = state
     end
 })
 
@@ -661,7 +687,7 @@ GeneralTab:Toggle({
 local AntiRagdoll = false
 
 GeneralTab:Toggle({
-    Title = "Anti Ragdoll",
+    Title = "กันล้ม",
     Default = false,
     Callback = function(v)
         AntiRagdoll = v
@@ -697,7 +723,7 @@ local plsraknet = Raknet or raknet
 if not plsraknet then return end
 
 GeneralTab:Toggle({
-    Title = "Invisible",
+    Title = "ล่องหน",
     Default = false,
     Callback = function(state)
         if plsraknet and plsraknet.desync then
@@ -756,7 +782,7 @@ local function StopSnap()
 end
 
 GeneralTab:Toggle({
-    Title = "Snap Under Map",
+    Title = "มุดดิน",
     Default = false,
     Callback = function(v)
         if v then
@@ -768,7 +794,7 @@ GeneralTab:Toggle({
 })
 
 GeneralTab:Slider({
-    Title = "Snap Depth",
+    Title = "ความลึก",
     Step = 1,
     Value = {
         Min = 5,
@@ -791,8 +817,8 @@ local Network = require(game.ReplicatedStorage.Modules.Core.Net)
 
 local TargetHistory = {}
 
-local FOV = 200
-local ShowFOV = true
+local FOV = 150
+local ShowFOV = false
 local AimPart = "Head"
 
 local fovCircle = Drawing.new("Circle")
@@ -1128,7 +1154,7 @@ GunmodsTab:Section(
 )
 
 GunmodsTab:Button({
-    Title = "Apply Gun Mod",
+    Title = "ยืนยันการแต่งปืน(แต่งแล้วต้องกดตรงนี้)",
     Callback = function()
         local tool = Character:FindFirstChildWhichIsA("Tool")
         if not tool then return end
@@ -1147,7 +1173,7 @@ GunmodsTab:Button({
 
 
 GunmodsTab:Toggle({
-    Title = "Auto Gun",
+    Title = "Auto Gun(แนะนำให้กดมันจะแต่งปืนให้เอง)",
     Default = false,
     Callback = function(v)
         AutomaticGun = v
@@ -1156,7 +1182,7 @@ GunmodsTab:Toggle({
 
 
 GunmodsTab:Slider({
-    Title = "Fire Rate",
+    Title = "อัตราการยิง",
     Step = 1,
     Value = {
         Min = 100,
@@ -1169,7 +1195,7 @@ GunmodsTab:Slider({
 })
 
 GunmodsTab:Slider({
-    Title = "Recoil",
+    Title = "แรงดีด",
     Step = 0.1,
     Value = {
         Min = 0,
@@ -1182,7 +1208,7 @@ GunmodsTab:Slider({
 })
 
 GunmodsTab:Slider({
-    Title = "Accuracy",
+    Title = "ความแม่นยำ",
     Step = 0.01,
     Value = {
         Min = 0,
@@ -1195,7 +1221,7 @@ GunmodsTab:Slider({
 })
 
 GunmodsTab:Slider({
-    Title = "Durability",
+    Title = "ความทนทาน",
     Step = 1,
     Value = {
         Min = 100,
@@ -1214,208 +1240,447 @@ VisualTab:Section(
     }
 )
 
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
-local ESP = {
-    Box = false,
-    Line = false,
-    Name = false,
-    Health = false,
-    Drawings = {}
-}
+ESP = ESP or {}
+ESP.Name = false
 
--- 3D → 2D
-local function WTS(pos)
-    local v, on = Camera:WorldToViewportPoint(pos)
-    return Vector2.new(v.X, v.Y), on
+local ESPs = {}
+
+local function RemoveESP(plr)
+	if ESPs[plr] then
+		ESPs[plr]:Destroy()
+		ESPs[plr] = nil
+	end
 end
 
--- สร้าง Drawing
-local function create(p)
-    if ESP.Drawings[p] then return end
+local function CreateESP(plr)
+	if plr == LocalPlayer then
+		return
+	end
 
-    local d = {
-        Box = {},
-        Name = Drawing.new("Text"),
-        Line = Drawing.new("Line"),
-        HealthBG = Drawing.new("Line"),
-        HealthBar = Drawing.new("Line")
-    }
+	local function Setup(char)
+		RemoveESP(plr)
 
-    -- 3D box
-    for i=1,12 do
-        local l = Drawing.new("Line")
-        l.Thickness = 2
-        l.Visible = false
-        table.insert(d.Box,l)
-    end
+		local head = char:FindFirstChild("Head")
+		if not head then
+			return
+		end
 
-    d.Name.Center = true
-    d.Name.Outline = true
-    d.Name.Size = 16
-    d.Name.Visible = false
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "NameESP"
+		gui.Adornee = head
+		gui.Size = UDim2.new(0, 200, 0, 30)
+		gui.StudsOffset = Vector3.new(0, 2, 0)
+		gui.AlwaysOnTop = true
+		gui.MaxDistance = 250
+		gui.Enabled = ESP.Name
 
-    d.Line.Thickness = 2
-    d.Line.Visible = false
+		local text = Instance.new("TextLabel")
+		text.BackgroundTransparency = 1
+		text.Size = UDim2.new(1,0,1,0)
+		text.Font = Enum.Font.SourceSansBold
+		text.TextSize = 12
+		text.TextColor3 = Color3.new(1,1,1)
+		text.TextStrokeTransparency = 0.5
+		text.Text = plr.Name
+		text.Parent = gui
 
-    d.HealthBG.Thickness = 4
-    d.HealthBG.Color = Color3.fromRGB(0,0,0)
-    d.HealthBG.Visible = false
+		gui.Parent = head
+		ESPs[plr] = gui
+	end
 
-    d.HealthBar.Thickness = 3
-    d.HealthBar.Color = Color3.fromRGB(0,255,0)
-    d.HealthBar.Visible = false
+	if plr.Character then
+		Setup(plr.Character)
+	end
 
-    ESP.Drawings[p] = d
+	plr.CharacterAdded:Connect(Setup)
 end
 
-RunService.RenderStepped:Connect(function()
-    for _,p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            create(p)
-            local d = ESP.Drawings[p]
+for _,plr in ipairs(Players:GetPlayers()) do
+	CreateESP(plr)
+end
 
-            local c = p.Character
-            if not c then continue end
+Players.PlayerAdded:Connect(CreateESP)
 
-            local hrp = c:FindFirstChild("HumanoidRootPart")
-            local head = c:FindFirstChild("Head")
-            local hum = c:FindFirstChildOfClass("Humanoid")
-            if not hrp or not head or not hum then continue end
-
-            local color = Color3.fromRGB(255,255,255)
-
-            
-            local cf = hrp.CFrame
-            local corners = {
-                cf * Vector3.new(-2,3,-1),
-                cf * Vector3.new(2,3,-1),
-                cf * Vector3.new(2,-3,-1),
-                cf * Vector3.new(-2,-3,-1),
-                cf * Vector3.new(-2,3,1),
-                cf * Vector3.new(2,3,1),
-                cf * Vector3.new(2,-3,1),
-                cf * Vector3.new(-2,-3,1),
-            }
-
-            local sc, vis = {}, true
-            for i,v in ipairs(corners) do
-                local p,on = WTS(v)
-                sc[i]=p
-                if not on then vis=false end
-            end
-
-            local lines = {
-                {1,2},{2,3},{3,4},{4,1},
-                {5,6},{6,7},{7,8},{8,5},
-                {1,5},{2,6},{3,7},{4,8}
-            }
-
-            for i,l in ipairs(d.Box) do
-                if ESP.Box and vis then
-                    l.From = sc[lines[i][1]]
-                    l.To = sc[lines[i][2]]
-                    l.Color = color
-                    l.Visible = true
-                else
-                    l.Visible = false
-                end
-            end
-
-            
-            local namePos,on = WTS(head.Position + Vector3.new(0,2.5,0))
-            if ESP.Name and on then
-                d.Name.Text = p.Name
-                d.Name.Position = namePos
-                d.Name.Color = color
-                d.Name.Visible = true
-            else
-                d.Name.Visible = false
-            end
-
-            
-            local rootPos,on2 = WTS(hrp.Position)
-            if ESP.Line and on2 then
-                d.Line.From = Vector2.new(Camera.ViewportSize.X/2, 0)
-                d.Line.To = rootPos
-                d.Line.Color = color
-                d.Line.Visible = true
-            else
-                d.Line.Visible = false
-            end
-
-            
-            local footPos,on3 = WTS(hrp.Position - Vector3.new(0,3.5,0))
-            if ESP.Health and on3 then
-                local healthPercent = hum.Health / hum.MaxHealth
-                local width = 40
-
-                local startPos = footPos - Vector2.new(width/2, 0)
-                local endPosBG = footPos + Vector2.new(width/2, 0)
-                local endPosHP = startPos + Vector2.new(width * healthPercent, 0)
-
-                d.HealthBG.From = startPos
-                d.HealthBG.To = endPosBG
-                d.HealthBG.Visible = true
-
-                d.HealthBar.From = startPos
-                d.HealthBar.To = endPosHP
-                d.HealthBar.Visible = true
-            else
-                d.HealthBG.Visible = false
-                d.HealthBar.Visible = false
-            end
-        end
-    end
+Players.PlayerRemoving:Connect(function(plr)
+	RemoveESP(plr)
 end)
 
-
-
 VisualTab:Toggle({
-    Title = "Box ESP",
-    Value = false,
-    Callback = function(v)
-        ESP.Box = v
-    end
-})
-
-VisualTab:Toggle({
-    Title = "Tracer ESP",
-    Value = false,
-    Callback = function(v)
-        ESP.Line = v
-    end
-})
-
-VisualTab:Toggle({
-    Title = "Name ESP",
+    Title = "มองชื่อ",
     Value = false,
     Callback = function(v)
         ESP.Name = v
+
+        for _,esp in pairs(ESPs) do
+            if esp then
+                esp.Enabled = v
+            end
+        end
     end
 })
 
+ESP.Box = false
+
+local BoxESPs = {}
+
+local function RemoveBox(plr)
+	if BoxESPs[plr] then
+		BoxESPs[plr]:Destroy()
+		BoxESPs[plr] = nil
+	end
+end
+
+local function CreateBox(plr)
+	if plr == LocalPlayer then
+		return
+	end
+
+	local function Setup(char)
+		RemoveBox(plr)
+
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		local hum = char:FindFirstChildOfClass("Humanoid")
+
+		if not hrp or not hum then
+			return
+		end
+
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "BoxESP"
+		gui.Adornee = hrp
+		gui.Size = UDim2.new(4,0,6,0)
+		gui.StudsOffset = Vector3.new(0,0,0)
+		gui.AlwaysOnTop = true
+		gui.MaxDistance = 250
+		gui.Enabled = ESP.Box
+
+		local frame = Instance.new("Frame")
+		frame.BackgroundTransparency = 1
+		frame.Size = UDim2.new(1,0,1,0)
+		frame.Parent = gui
+
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.new(1,1,1)
+		stroke.Thickness = 1
+		stroke.Parent = frame
+
+		gui.Parent = hrp
+		BoxESPs[plr] = gui
+	end
+
+	if plr.Character then
+		Setup(plr.Character)
+	end
+
+	plr.CharacterAdded:Connect(Setup)
+end
+
+for _,plr in ipairs(Players:GetPlayers()) do
+	CreateBox(plr)
+end
+
+Players.PlayerAdded:Connect(CreateBox)
+
+Players.PlayerRemoving:Connect(function(plr)
+	RemoveBox(plr)
+end)
+
 VisualTab:Toggle({
-    Title = "Health ESP",
+    Title = "มองคนเป็นกล่อง",
+    Value = false,
+    Callback = function(v)
+        ESP.Box = v
+
+        for _,esp in pairs(BoxESPs) do
+            if esp then
+                esp.Enabled = v
+            end
+        end
+    end
+})
+
+ESP.Health = false
+
+local HealthESPs = {}
+
+local function RemoveHealth(plr)
+	if HealthESPs[plr] then
+		HealthESPs[plr]:Destroy()
+		HealthESPs[plr] = nil
+	end
+end
+
+local function CreateHealth(plr)
+	if plr == LocalPlayer then
+		return
+	end
+
+	local function Setup(char)
+		RemoveHealth(plr)
+
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		local hum = char:FindFirstChildOfClass("Humanoid")
+
+		if not hrp or not hum then
+			return
+		end
+
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "HealthESP"
+		gui.Adornee = hrp
+		gui.Size = UDim2.new(0, 8, 0, 50)
+		gui.StudsOffset = Vector3.new(-3, 0, 0)
+		gui.AlwaysOnTop = true
+		gui.MaxDistance = 250
+		gui.Enabled = ESP.Health
+
+		local bg = Instance.new("Frame")
+		bg.Size = UDim2.new(1,0,1,0)
+		bg.BackgroundColor3 = Color3.new(0,0,0)
+		bg.BorderSizePixel = 0
+		bg.Parent = gui
+
+		local bar = Instance.new("Frame")
+		bar.AnchorPoint = Vector2.new(0,1)
+		bar.Position = UDim2.new(0,0,1,0)
+		bar.Size = UDim2.new(1,0,1,0)
+		bar.BackgroundColor3 = Color3.fromRGB(0,255,0)
+		bar.BorderSizePixel = 0
+		bar.Parent = bg
+
+		local function Update()
+			local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+
+			bar.Size = UDim2.new(1,0,hp,0)
+
+			bar.BackgroundColor3 = Color3.fromRGB(
+				255 * (1 - hp),
+				255 * hp,
+				0
+			)
+		end
+
+		Update()
+
+		hum.HealthChanged:Connect(Update)
+
+		gui.Parent = hrp
+		HealthESPs[plr] = gui
+	end
+
+	if plr.Character then
+		Setup(plr.Character)
+	end
+
+	plr.CharacterAdded:Connect(Setup)
+end
+
+for _,plr in ipairs(Players:GetPlayers()) do
+	CreateHealth(plr)
+end
+
+Players.PlayerAdded:Connect(CreateHealth)
+
+Players.PlayerRemoving:Connect(function(plr)
+	RemoveHealth(plr)
+end)
+
+VisualTab:Toggle({
+    Title = "มองเลือด",
     Value = false,
     Callback = function(v)
         ESP.Health = v
+
+        for _,esp in pairs(HealthESPs) do
+            if esp then
+                esp.Enabled = v
+            end
+        end
+    end
+})
+
+ESP.Distance = false
+
+local DistanceESPs = {}
+
+local function RemoveDistance(plr)
+	if DistanceESPs[plr] then
+		DistanceESPs[plr]:Destroy()
+		DistanceESPs[plr] = nil
+	end
+end
+
+local function CreateDistance(plr)
+	if plr == LocalPlayer then
+		return
+	end
+
+	local function Setup(char)
+		RemoveDistance(plr)
+
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if not hrp then
+			return
+		end
+
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "DistanceESP"
+		gui.Adornee = hrp
+		gui.Size = UDim2.new(0,100,0,20)
+		gui.StudsOffset = Vector3.new(0,-3,0)
+		gui.AlwaysOnTop = true
+		gui.MaxDistance = 250
+		gui.Enabled = ESP.Distance
+
+		local text = Instance.new("TextLabel")
+		text.BackgroundTransparency = 1
+		text.Size = UDim2.new(1,0,1,0)
+		text.Font = Enum.Font.SourceSansBold
+		text.TextSize = 12
+		text.TextColor3 = Color3.new(1,1,1)
+		text.TextStrokeTransparency = 0.5
+		text.Parent = gui
+
+		gui.Parent = hrp
+		DistanceESPs[plr] = gui
+
+		task.spawn(function()
+			while gui.Parent and hrp.Parent do
+				if ESP.Distance and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+					local myhrp = LocalPlayer.Character.HumanoidRootPart
+					local dist = math.floor((myhrp.Position - hrp.Position).Magnitude)
+					text.Text = dist .. "m"
+				end
+
+				task.wait(0.15)
+			end
+		end)
+	end
+
+	if plr.Character then
+		Setup(plr.Character)
+	end
+
+	plr.CharacterAdded:Connect(Setup)
+end
+
+for _,plr in ipairs(Players:GetPlayers()) do
+	CreateDistance(plr)
+end
+
+Players.PlayerAdded:Connect(CreateDistance)
+
+Players.PlayerRemoving:Connect(function(plr)
+	RemoveDistance(plr)
+end)
+
+VisualTab:Toggle({
+    Title = "ระยะ",
+    Value = false,
+    Callback = function(v)
+        ESP.Distance = v
+
+        for _,esp in pairs(DistanceESPs) do
+            if esp then
+                esp.Enabled = v
+            end
+        end
+    end
+})
+
+ESP.Trace = false
+
+local Camera = workspace.CurrentCamera
+local Traces = {}
+
+local function RemoveTrace(plr)
+	if Traces[plr] then
+		Traces[plr]:Remove()
+		Traces[plr] = nil
+	end
+end
+
+local function CreateTrace(plr)
+	if plr == LocalPlayer then
+		return
+	end
+
+	local line = Drawing.new("Line")
+	line.Visible = false
+	line.Thickness = 1
+	line.Transparency = 1
+	line.Color = Color3.new(1,1,1)
+
+	Traces[plr] = line
+end
+
+for _,plr in ipairs(Players:GetPlayers()) do
+	CreateTrace(plr)
+end
+
+Players.PlayerAdded:Connect(CreateTrace)
+
+Players.PlayerRemoving:Connect(function(plr)
+	RemoveTrace(plr)
+end)
+
+task.spawn(function()
+	while task.wait(0.03) do
+		if not ESP.Trace then
+			for _,line in pairs(Traces) do
+				line.Visible = false
+			end
+			continue
+		end
+
+		local centerX = Camera.ViewportSize.X / 2
+
+		for plr,line in pairs(Traces) do
+			local char = plr.Character
+
+			if char then
+				local head = char:FindFirstChild("Head")
+				local hum = char:FindFirstChildOfClass("Humanoid")
+
+				if head and hum and hum.Health > 0 then
+					local pos, visible = Camera:WorldToViewportPoint(head.Position)
+
+					if visible then
+						line.From = Vector2.new(centerX,0)
+						line.To = Vector2.new(pos.X,pos.Y)
+						line.Visible = true
+					else
+						line.Visible = false
+					end
+				else
+					line.Visible = false
+				end
+			else
+				line.Visible = false
+			end
+		end
+	end
+end)
+
+VisualTab:Toggle({
+    Title = "เส้นโยง",
+    Value = false,
+    Callback = function(v)
+        ESP.Trace = v
     end
 })
 
 VisualTab:Toggle({
-	Title = 'Inventory Viewer',
+	Title = 'มองของ',
 	Default = false,
 	Callback = function(Value)
 		_G.InventoryViewerEnabled = Value
-
 		local Players = game:GetService('Players')
 		local ReplicatedStorage = game:GetService('ReplicatedStorage')
 		local Client = Players.LocalPlayer
-
 		local function GetColorFromRarity(rarityName)
 			local colors = {
 				['Common'] = Color3.fromRGB(255, 255, 255),
@@ -1425,59 +1690,59 @@ VisualTab:Toggle({
 				['Epic'] = Color3.fromRGB(237, 44, 255),
 				['Omega'] = Color3.fromRGB(255, 20, 51),
 			}
-			return colors[rarityName] or Color3.fromRGB(255,255,255)
+			return colors[rarityName] or Color3.fromRGB(255, 255, 255)
 		end
-
 		if Value then
 			if not _G.ViewerRunning then
 				_G.ViewerRunning = true
-
 				task.spawn(function()
 					while task.wait(0.2) do
-						if not _G.InventoryViewerEnabled then continue end
-
+						if not _G.InventoryViewerEnabled then
+							continue
+						end
 						pcall(function()
 							for _, v in pairs(Players:GetPlayers()) do
 								if v ~= Client and v.Character and v.Character:FindFirstChild('HumanoidRootPart') then
 									local root = v.Character.HumanoidRootPart
 									local gui = root:FindFirstChild('ItemBillboard')
-
 									if not gui then
 										gui = Instance.new('BillboardGui')
 										gui.Name = 'ItemBillboard'
 										gui.AlwaysOnTop = true
-										gui.Size = UDim2.new(0, 200, 0, 200)
-										gui.StudsOffset = Vector3.new(0,0,0)
-										gui.ExtentsOffsetWorldSpace = Vector3.new(0,-3.5,0)
+										gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+										gui.Size = UDim2.new(0, 200, 0, 50)
+										gui.StudsOffset = Vector3.new(0, -5, 0)
+										gui.ExtentsOffset = Vector3.new(0, 1, 0)
+										gui.LightInfluence = 1
 										gui.Parent = root
-
 										local bg = Instance.new('Frame')
 										bg.Name = 'BG'
 										bg.BackgroundTransparency = 1
 										bg.Size = UDim2.new(1, 0, 1, 0)
+										bg.AnchorPoint = Vector2.new(0.5, 0.5)
+										bg.Position = UDim2.new(0.5, 0, 0.5, 0)
 										bg.Parent = gui
-
 										local layout = Instance.new('UIListLayout')
-										layout.FillDirection = Enum.FillDirection.Vertical
+										layout.FillDirection = Enum.FillDirection.Horizontal
 										layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-										layout.VerticalAlignment = Enum.VerticalAlignment.Top
-										layout.Padding = UDim.new(0, 1)
+										layout.VerticalAlignment = Enum.VerticalAlignment.Center
+										layout.Padding = UDim.new(0, 5)
 										layout.Parent = bg
 									end
-
-									gui.ExtentsOffsetWorldSpace = Vector3.new(0,-3.5,0)
-
 									local bg = gui:FindFirstChild('BG')
-									if not bg then continue end
-
+									if not bg then
+										continue
+									end
 									local Items = {}
 
+                                    
 									for _, child in pairs(bg:GetChildren()) do
-										if child:IsA('TextLabel') then
+										if child:IsA('Frame') then
 											child:Destroy()
 										end
 									end
 
+                                    -- loop item ใน backpack + character
 									for _, container in pairs({
 										v:FindFirstChild('Backpack'),
 										v.Character
@@ -1487,21 +1752,41 @@ VisualTab:Toggle({
 												if tool:IsA('Tool') and not tool:GetAttribute('JobTool') and not tool:GetAttribute('Locked') then
 													local itemFolder = tool:GetAttribute('AmmoType') and ReplicatedStorage.Items.gun or ReplicatedStorage.Items.melee
 													for _, z in pairs(itemFolder:GetChildren()) do
-														if tool:GetAttribute('RarityName') == z:GetAttribute('RarityName')
-														and tool:GetAttribute('RarityPrice') == z:GetAttribute('RarityPrice') then
-															Items[z.Name] = true
-															if not bg:FindFirstChild(z.Name) then
-																local txt = Instance.new('TextLabel')
-																txt.Name = z.Name
-																txt.Size = UDim2.new(1, 0, 0, 12)
-																txt.BackgroundTransparency = 1
-																txt.Text = "[" .. z.Name .. "]"
-																txt.TextColor3 = GetColorFromRarity(z:GetAttribute('RarityName'))
-																txt.TextSize = 12
-																txt.Font = Enum.Font.SourceSansBold
-																txt.TextStrokeTransparency = 0
-																txt.TextXAlignment = Enum.TextXAlignment.Center
-																txt.Parent = bg
+														if tool:GetAttribute('RarityName') == z:GetAttribute('RarityName') and tool:GetAttribute('RarityPrice') == z:GetAttribute('RarityPrice') then
+															local imageId = z:GetAttribute('ImageId')
+															if imageId then
+																Items[z.Name] = true
+																if not bg:FindFirstChild(z.Name .. '_bg') then
+																	local iconBg = Instance.new('Frame')
+																	iconBg.Name = z.Name .. '_bg'
+																	iconBg.Size = UDim2.new(0, 34, 0, 34)
+																	iconBg.BackgroundColor3 = GetColorFromRarity(z:GetAttribute('RarityName'))
+																	iconBg.BackgroundTransparency = 1
+																	iconBg.BorderSizePixel = 0
+																	iconBg.Parent = bg
+																	local bgImage = Instance.new('ImageLabel')
+																	bgImage.Name = 'Background'
+																	bgImage.Size = UDim2.new(1, 0, 1, 0)
+																	bgImage.BackgroundTransparency = 1
+																	bgImage.Image = 'rbxassetid://137066731814190'
+																	bgImage.ImageColor3 = GetColorFromRarity(z:GetAttribute('RarityName'))
+																	bgImage.ZIndex = 0
+																	bgImage.Parent = iconBg
+																	local corner = Instance.new('UICorner')
+																	corner.CornerRadius = UDim.new(0.15, 0)
+																	corner.Parent = iconBg
+																	local icon = Instance.new('ImageLabel')
+																	icon.Name = z.Name
+																	icon.Image = imageId
+																	icon.BackgroundTransparency = 1
+																	icon.BorderSizePixel = 0
+																	icon.Size = UDim2.new(0.85, 0, 0.85, 0)
+																	icon.Position = UDim2.new(0.075, 0, 0.075, 0)
+																	icon.Parent = iconBg
+																	local corner2 = Instance.new('UICorner')
+																	corner2.CornerRadius = UDim.new(0, 9)
+																	corner2.Parent = icon
+																end
 															end
 														end
 													end
@@ -1509,12 +1794,11 @@ VisualTab:Toggle({
 											end
 										end
 									end
-
 									gui.Enabled = _G.InventoryViewerEnabled
-
 									for _, child in pairs(bg:GetChildren()) do
-										if child:IsA('TextLabel') then
-											if not Items[child.Name] then
+										if child:IsA('Frame') then
+											local itemName = child.Name:gsub('_bg$', '')
+											if not Items[itemName] then
 												child:Destroy()
 											end
 										end
@@ -1526,6 +1810,7 @@ VisualTab:Toggle({
 				end)
 			end
 		else
+            
 			for _, v in pairs(Players:GetPlayers()) do
 				if v.Character and v.Character:FindFirstChild('HumanoidRootPart') then
 					local gui = v.Character.HumanoidRootPart:FindFirstChild('ItemBillboard')
@@ -1535,27 +1820,31 @@ VisualTab:Toggle({
 				end
 			end
 		end
-	end
-})
+	end  
+})  ​
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local DroppedFolder = workspace:WaitForChild("DroppedItems")
 
 local ItemESPs = {}
-local ShowItemESP = false
-local BlueColor = Color3.fromRGB(0, 150, 255)
-local GreenColor = Color3.fromRGB(0, 255, 0)
+local ShowItemESP = true
+
+local BlueColor = Color3.fromRGB(0,150,255)
+local GreenColor = Color3.fromRGB(0,255,0)
 
 local function getItemColor(item)
     if item.Name:lower():find("money") then
         return GreenColor
     end
+
     return BlueColor
 end
 
 local function createItemESP(item)
-    if not ShowItemESP or ItemESPs[item] then return end
+    if ItemESPs[item] then
+        return
+    end
 
     local color = getItemColor(item)
     local highlights = {}
@@ -1571,38 +1860,44 @@ local function createItemESP(item)
         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         hl.Enabled = true
         hl.Parent = part
+
         table.insert(highlights, hl)
     end
 
     if item:IsA("BasePart") then
         addHighlight(item)
+
     elseif item:IsA("Model") then
-        for _, v in ipairs(item:GetDescendants()) do
+        for _,v in ipairs(item:GetDescendants()) do
             if v:IsA("BasePart") then
                 addHighlight(v)
             end
         end
     end
 
-    local basePart = item:IsA("BasePart") and item or item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
+    local basePart =
+        item:IsA("BasePart") and item
+        or item.PrimaryPart
+        or item:FindFirstChildWhichIsA("BasePart")
 
     if basePart then
         local bb = Instance.new("BillboardGui")
-        bb.Name = "ItemESP_Gui"
         bb.Adornee = basePart
-        bb.Size = UDim2.new(0, 55, 0, 9)
-        bb.StudsOffset = Vector3.new(0, basePart.Size.Y/2 + 0.6, 0)
+        bb.Size = UDim2.new(0,55,0,9)
+        bb.StudsOffset = Vector3.new(0, basePart.Size.Y / 2 + 0.6, 0)
         bb.AlwaysOnTop = true
         bb.Parent = basePart
 
         label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
+        label.Size = UDim2.new(1,0,1,0)
         label.BackgroundTransparency = 1
         label.Text = "[" .. item.Name .. "]"
         label.Font = Enum.Font.GothamBold
+        label.TextScaled = false
         label.TextSize = 8
         label.TextColor3 = color
         label.TextStrokeTransparency = 0.5
+        label.Visible = true
         label.Parent = bb
     end
 
@@ -1614,10 +1909,15 @@ end
 
 local function removeItemESP(item)
     local data = ItemESPs[item]
-    if not data then return end
 
-    for _, hl in ipairs(data.highlights) do
-        if hl then hl:Destroy() end
+    if not data then
+        return
+    end
+
+    for _,hl in ipairs(data.highlights) do
+        if hl then
+            hl:Destroy()
+        end
     end
 
     if data.label and data.label.Parent then
@@ -1627,32 +1927,12 @@ local function removeItemESP(item)
     ItemESPs[item] = nil
 end
 
-DroppedFolder.ChildAdded:Connect(function(item)
-    if ShowItemESP then
-        createItemESP(item)
-    end
-end)
+for _,item in ipairs(DroppedFolder:GetChildren()) do
+    createItemESP(item)
+end
 
+DroppedFolder.ChildAdded:Connect(createItemESP)
 DroppedFolder.ChildRemoved:Connect(removeItemESP)
-
-VisualTab:Toggle({
-    Title = "Drop Item Viewer",
-    Desc = "",
-    Default = false,
-    Callback = function(v)
-        ShowItemESP = v
-        
-        if ShowItemESP then
-            for _, item in ipairs(DroppedFolder:GetChildren()) do
-                createItemESP(item)
-            end
-        else
-            for item, _ in pairs(ItemESPs) do
-                removeItemESP(item)
-            end
-        end
-    end
-})
 
 carTab:Section(
     {
@@ -1661,7 +1941,7 @@ carTab:Section(
 )
 
 carTab:Button({
-        Title = "Pull Car Owner",
+        Title = "ดึงรถของตัวเองมาหา",
         Desc = "",
         Callback = function()
             local Players = game:GetService("Players")
@@ -2097,7 +2377,7 @@ end)
 speedBox.PlaceholderText = tostring(SPEED)
 
 MiscTab:Button({
-    Title = "Boost FPS",
+    Title = "ลดแล็ค",
     Callback = function()
         local Lighting = game:GetService("Lighting")
         local Terrain = workspace:FindFirstChildOfClass("Terrain")
@@ -2146,7 +2426,7 @@ local CrateController = require(game:GetService("ReplicatedStorage").Modules.Gam
 local EnabledSkip = false
 
 MiscTab:Toggle({
-    Title = "Skip Animation",
+    Title = "ข้ามสุ่มของ",
     Default = EnabledSkip,
     Callback = function(v)
         EnabledSkip = v
