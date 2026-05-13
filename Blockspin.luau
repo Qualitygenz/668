@@ -2547,3 +2547,61 @@ ServerTab:Button(
         end
     }
 )
+
+local HttpService = game:GetService("HttpService")
+
+local ConfigTab = Window:Tab({ Title = "Config" })
+
+local ConfigFile = "MyHubConfig.json"
+
+local Flags = ESP
+
+local function SaveConfig()
+    if writefile then
+        writefile(
+            ConfigFile,
+            HttpService:JSONEncode(Flags)
+        )
+    end
+end
+
+local function LoadConfig()
+    if isfile and isfile(ConfigFile) then
+        local Data = HttpService:JSONDecode(readfile(ConfigFile))
+
+        for i,v in pairs(Data) do
+            if Flags[i] ~= nil then
+                Flags[i] = v
+            end
+        end
+    end
+end
+
+local function ResetConfig()
+    for i,_ in pairs(Flags) do
+        Flags[i] = false
+    end
+
+    SaveConfig()
+end
+
+ConfigTab:Button({
+    Title = "Save Config",
+    Callback = function()
+        SaveConfig()
+    end
+})
+
+ConfigTab:Button({
+    Title = "Load Config",
+    Callback = function()
+        LoadConfig()
+    end
+})
+
+ConfigTab:Button({
+    Title = "Reset Config",
+    Callback = function()
+        ResetConfig()
+    end
+})
